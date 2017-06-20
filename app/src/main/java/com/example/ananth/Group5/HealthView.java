@@ -23,7 +23,6 @@ import android.widget.Toast;
 
 import java.io.DataOutputStream;
 import java.io.File;
-import android.database.sqlite.SQLiteDatabase;
 
 
 import java.io.FileInputStream;
@@ -33,20 +32,12 @@ import java.net.URL;
 import java.security.SecureRandom;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
-import java.text.SimpleDateFormat;
 import java.util.Arrays;
-import java.util.Date;
-import java.util.Locale;
 
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
-
-import static android.R.attr.name;
-import static android.R.attr.x;
-import static android.R.attr.y;
-import static android.icu.lang.UCharacter.GraphemeClusterBreak.T;
 
 
 public class HealthView extends AppCompatActivity {
@@ -72,8 +63,7 @@ public class HealthView extends AppCompatActivity {
     private static int httpResponse = 0;
     public static String httpResponseMsg = "";
 
-    public static final String DATABASE_NAME = "svellangDatabase";
-    public static final String DATABASE_LOCATION = "/mnt/sdcard/CSE535_ASSIGNMENT2.db";
+    public static final String DATABASE_LOCATION = "/mnt/sdcard/CSE535_ASSIGNMENT2/Group5.db";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -88,6 +78,7 @@ public class HealthView extends AppCompatActivity {
         mFilter = new IntentFilter();
         mFilter.addAction(mBroadcastAccData);
         Log.e(TAG, "Registering for receiever");
+        Arrays.fill(randomPoints, 0);
         registerReceiver(reciever, mFilter);
     }
 
@@ -142,7 +133,7 @@ public class HealthView extends AppCompatActivity {
                     @Override
                     public void run() {
                         //Log.e(TAG, "thread ");
-                            //db = new DataBaseOpenHelper(getApplicationContext()).getWritableDatabase();
+                            checkAndFixDBPath();
                             db = SQLiteDatabase.openOrCreateDatabase(DATABASE_LOCATION, null);
                             db.beginTransaction();
                             Log.d(TAG, "Database path " +db.getPath());
@@ -182,6 +173,15 @@ public class HealthView extends AppCompatActivity {
         return false;
     }
 
+    public void checkAndFixDBPath() {
+        File dir = new File(Environment.getExternalStorageDirectory() + "/CSE535_ASSIGNMENT2");
+        if(dir.exists() && dir.isDirectory()) {
+
+        }
+        else {
+            dir.mkdir();
+        }
+    }
     public void onRunClicked(View v) throws InterruptedException {
 
 
@@ -195,7 +195,7 @@ public class HealthView extends AppCompatActivity {
             @Override
             public void run() {
 
-                //randomPoints = fetchFromDB();
+                randomPoints = fetchFromDB();
                 running = true;
                 while (running) {
                     randomPoints = fetchFromDB();
@@ -204,13 +204,17 @@ public class HealthView extends AppCompatActivity {
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
-                    /* Turnaround of the values to create a variadic graph pattern */
-                    float init = randomPoints[0];
-                   /* for (int i = 0; i < randomPoints.length - 1; i++) {
-                        randomPoints[i] = randomPoints[i + 1];
-                    }*/
-                    randomPoints[randomPoints.length - 1] = init;
 
+                    try {
+                     /* Turnaround of the values to create a variadic graph pattern */
+                        float init = randomPoints[0];
+
+                        if (randomPoints.length > 0) {
+                            randomPoints[randomPoints.length - 1] = init;
+                        }
+                    } catch(ArrayIndexOutOfBoundsException e) {
+                        e.printStackTrace();
+                    }
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
