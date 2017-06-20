@@ -316,7 +316,7 @@ public class HealthView extends AppCompatActivity {
 
 
                     // Open a HTTP  connection to  the URL
-                    conn = (HttpURLConnection) url.openConnection();
+                    conn = (HttpsURLConnection) url.openConnection();
                     conn.setDoInput(true);
                     conn.setDoOutput(true);
                     conn.setUseCaches(false);
@@ -431,6 +431,7 @@ public class HealthView extends AppCompatActivity {
             float[] coords = new float[c.getCount()];
             Log.v(TAG, "Number of records " + c.getCount()+ " ");
 
+            Arrays.fill(coords, 0);
             float xval, yval, zval;
             int index = 0;
             if(c.moveToFirst()) {
