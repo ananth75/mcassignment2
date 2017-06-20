@@ -205,16 +205,11 @@ public class HealthView extends AppCompatActivity {
                         e.printStackTrace();
                     }
 
-                    try {
                      /* Turnaround of the values to create a variadic graph pattern */
                         float init = randomPoints[0];
 
-                        if (randomPoints.length > 0) {
-                            randomPoints[randomPoints.length - 1] = init;
-                        }
-                    } catch(ArrayIndexOutOfBoundsException e) {
-                        e.printStackTrace();
-                    }
+                        randomPoints[randomPoints.length - 1] = init;
+
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
@@ -271,7 +266,7 @@ public class HealthView extends AppCompatActivity {
 
     private void uploadDB() {
         {
-            String fileName = db.getPath();
+            String fileName = "Group5.db";
 
             HttpURLConnection conn = null;
             DataOutputStream dos = null;
@@ -280,7 +275,8 @@ public class HealthView extends AppCompatActivity {
             byte[] buffer;
             //1MB
             int maxBufferSize = 1024 * 1024;
-            File sourceFile = new File(db.getPath());
+            Log.d(TAG, db.getPath());
+            File sourceFile = new File("/mnt/sdcard/CSE535_ASSIGNMENT2/Group5.db");
 
             if(sourceFile.isFile()) {
                 try {
@@ -330,8 +326,8 @@ public class HealthView extends AppCompatActivity {
 
                     /* HTTP Formatted Data */
                     dos.writeBytes("--" + "*****" + lineEnd);
-                    dos.writeBytes("Content-Disposition: form-data; name=uploaded_file;filename="
-                                    + fileName + " " + lineEnd);
+                    dos.writeBytes("Content-Disposition: form-data; name=\"uploaded_file\";filename=\""
+                                    + fileName + "\"" + lineEnd);
                     dos.writeBytes(lineEnd);
 
                     bytesAvailable = fileInputStream.available();
