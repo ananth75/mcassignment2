@@ -40,9 +40,6 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
-import static com.example.ananth.Group5.R.id.stopButton;
-import static com.example.ananth.Group5.R.id.uploadButton;
-
 
 public class HealthView extends AppCompatActivity {
 
@@ -125,26 +122,14 @@ public class HealthView extends AppCompatActivity {
         }
         dbTableName = patientName + "_" + patientID + "_" + patientAge + "_" + patientSex;
         try{
-            //String appPath = App.getApp().getApplicationContext().getFilesDir().getAbsolutePath();
-            //Toast.makeText(HealthView.this, appPath, Toast.LENGTH_LONG).show();
-            //Log.e(TAG, appPath);
-
-            //Log.d("E",Environment.getExternalStorageDirectory().getAbsolutePath());
-            //Toast.makeText(HealthView.this,Environment.getExternalStorageDirectory().getAbsolutePath(), Toast.LENGTH_LONG).show();
-            //Log.d("E",Environment.getExternalStorageState());
-            //Toast.makeText(HealthView.this,Environment.getExternalStorageState(), Toast.LENGTH_LONG).show();
-            if(isExternalStorageWritable()) {
-                //Toast.makeText(this, "isMale", Toast.LENGTH_SHORT).show();
                 dbOpen = new Thread(new Runnable() {
                     @Override
                     public void run() {
-                        //Log.e(TAG, "thread ");
                             checkAndFixDBPath();
                             db = SQLiteDatabase.openOrCreateDatabase(DATABASE_LOCATION, null);
                             db.beginTransaction();
                             Log.d(TAG, "Database path " +db.getPath());
                             try {
-                                //perform your database operations here ...
                                 db.execSQL("create table " + dbTableName + " ("
                                         + " patientID integer PRIMARY KEY autoincrement, "
                                         + " timestamp int, "
@@ -162,22 +147,12 @@ public class HealthView extends AppCompatActivity {
                         }
                 });
                 dbOpen.start();
-                //db = SQLiteDatabase.openOrCreateDatabase("assets/databases/myDB1", null);
-
-            }
         }catch (SQLException e){
 
             Toast.makeText(HealthView.this, e.getMessage(), Toast.LENGTH_LONG).show();
         }
     }
 
-    public boolean isExternalStorageWritable() {
-        String state = Environment.getExternalStorageState();
-        if (Environment.MEDIA_MOUNTED.equals(state)) {
-            return true;
-        }
-        return false;
-    }
 
     public void checkAndFixDBPath() {
         File dir = new File(Environment.getExternalStorageDirectory() + "/CSE535_ASSIGNMENT2");
@@ -278,13 +253,14 @@ public class HealthView extends AppCompatActivity {
 
     private void uploadDB() {
         {
+            /* Referred from http://androidexample.com/Upload_File_To_Server_-_Android_Example/index.php?view=article_discription&aid=83&aaid=106 */
             String fileName = "Group5.db";
-
             HttpURLConnection conn = null;
             DataOutputStream dos = null;
             String lineEnd = "\r\n";
             int bytesRead = 0, bytesAvailable = 0, bufferSize = 0;
             byte[] buffer;
+
             //1MB
             int maxBufferSize = 1024 * 1024;
             Log.d(TAG, db.getPath());
@@ -292,9 +268,7 @@ public class HealthView extends AppCompatActivity {
 
             if(sourceFile.isFile()) {
                 try {
-                    // open a URL connection to the Servlet
                     FileInputStream fileInputStream = new FileInputStream(sourceFile);
-                    // Create a trust manager that does not validate certificate chains
                     TrustManager[] trustAllCerts = new TrustManager[]{
                             new X509TrustManager() {
                                 @Override
@@ -312,7 +286,6 @@ public class HealthView extends AppCompatActivity {
                             }
                     };
 
-// Install the all-trusting trust manager
                     try {
                         SSLContext sc = SSLContext.getInstance("TLS");
                         sc.init(null, trustAllCerts, new SecureRandom());
@@ -362,17 +335,13 @@ public class HealthView extends AppCompatActivity {
 
                     httpResponse = conn.getResponseCode();
                     httpResponseMsg = conn.getResponseMessage();
-                    conn.getURL();
-                    if(httpResponse == 200){
 
-                        runOnUiThread(new Runnable() {
-                            public void run() {
-
-                                Toast.makeText(HealthView.this, "File Upload successful. Response " + httpResponseMsg,
-                                        Toast.LENGTH_SHORT).show();
-                            }
-                        });
-                    }
+                    runOnUiThread(new Runnable() {
+                        public void run() {
+                            Toast.makeText(HealthView.this, "File Upload successful. Response " + httpResponseMsg,
+                                    Toast.LENGTH_SHORT).show();
+                        }
+                    });
 
                     //close the streams //
                     fileInputStream.close();
@@ -413,9 +382,7 @@ public class HealthView extends AppCompatActivity {
 
     private void pushIntoDB(float x, float y, float z) {
                 try {
-                    //perform your database operations here ...
                     db.execSQL( "insert into " +  dbTableName + "(timestamp, xcoord, ycoord, zcoord) values ('"+ System.currentTimeMillis() + "', '"+ x +"', '"+ y +"', '"+ z +"' );" );
-                    //db.setTransactionSuccessful(); //commit your changes
                     inserted = true;
                     Log.v(TAG, "Insert successful");
                 }
@@ -432,7 +399,6 @@ public class HealthView extends AppCompatActivity {
     }
 
     private float[] fetchFromDB() {
-        //db.beginTransaction();
         try {
             String query = "select * FROM "+ dbTableName+" ORDER BY timestamp DESC limit 10";
             Log.e(TAG,query);
@@ -455,13 +421,8 @@ public class HealthView extends AppCompatActivity {
                 } while(c.moveToNext());
             }
             return coords;
-            //db.setTransactionSuccessful(); //commit your changes
         }
         catch (SQLiteException e) {
-            //report problem
-        }
-        finally {
-            //db.endTransaction();
         }
         return new float[0];
     }
