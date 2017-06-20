@@ -22,11 +22,15 @@ import android.view.View;
 import android.widget.RadioButton;
 import android.widget.Toast;
 
+import java.io.BufferedInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 
 
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -166,6 +170,10 @@ public class HealthView extends AppCompatActivity {
     public void onRunClicked(View v) throws InterruptedException {
 
 
+        if(patientID.isEmpty() || patientAge.isEmpty() || patientName.isEmpty() || (patientSex).isEmpty()) {
+            Toast.makeText(this, "Please enter all the patient's details", Toast.LENGTH_SHORT).show();
+            return;
+        }
         //Getting focus to the graph's linear layout. COde reused from StackOverflow
         //https://stackoverflow.com/questions/2150656/how-to-set-focus-on-a-view-when-a-layout-is-created-and-displayed
         InputMethodManager inputManager = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
@@ -236,6 +244,15 @@ public class HealthView extends AppCompatActivity {
     }
 
 
+    public void onDatabaseDownloadClicked(View V) throws InterruptedException {
+
+        new Thread (new Runnable() {
+            public void run() {
+                downloadDB();
+            }
+
+        }).start();
+    }
     BroadcastReceiver reciever = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -253,6 +270,10 @@ public class HealthView extends AppCompatActivity {
 
     private void uploadDB() {
         {
+            if(patientID.isEmpty() || patientAge.isEmpty() || patientName.isEmpty() || (patientSex).isEmpty()) {
+                //Toast.makeText(HealthView.this, "Please enter all the patient's details", Toast.LENGTH_SHORT).show();
+                return;
+            }
             /* Referred from http://androidexample.com/Upload_File_To_Server_-_Android_Example/index.php?view=article_discription&aid=83&aaid=106 */
             String fileName = "Group5.db";
             HttpURLConnection conn = null;
@@ -379,6 +400,60 @@ public class HealthView extends AppCompatActivity {
     }
 
 
+    public void downloadDB() {
+        HttpURLConnection conn = null;
+        try {
+            TrustManager[] trustAllCerts = new TrustManager[]{
+                    new X509TrustManager() {
+                        @Override
+                        public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {
+
+                        }
+
+                        public X509Certificate[] getAcceptedIssuers() {
+                            return null;
+                        }
+
+                        public void checkServerTrusted(
+                                X509Certificate[] certs, String authType) {
+                        }
+                    }
+            };
+
+            try {
+                SSLContext sc = SSLContext.getInstance("TLS");
+                sc.init(null, trustAllCerts, new SecureRandom());
+                HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+                URL url = new URL("https://impact.asu.edu/CSE535Spring17Folder/Group5");
+
+                conn = (HttpsURLConnection) url.openConnection();
+
+                BufferedInputStream inputBufferStream = new BufferedInputStream(conn.getInputStream());
+                ByteArrayOutputStream readBufferStream = new ByteArrayOutputStream(250);
+
+                int index = 0;
+                while ((index = inputBufferStream.read()) != -1) {
+                    readBufferStream.write((byte) index);
+                }
+                FileOutputStream fos = new FileOutputStream(new File("/mnt/sdcard/CSE535_ASSIGNMENT2/Group5.db"));
+                fos.write(readBufferStream.toByteArray());
+                fos.close();
+                runOnUiThread(new Runnable() {
+                    public void run() {
+                        Toast.makeText(HealthView.this, "File download successful. Response " + httpResponseMsg,
+                                Toast.LENGTH_SHORT).show();
+                    }
+                });
+        } catch(IOException ex) {
+            ex.printStackTrace();
+        }
+         catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
     private void pushIntoDB(float x, float y, float z) {
                 try {
