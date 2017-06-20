@@ -77,7 +77,8 @@ public class sensorHandlerService extends Service implements SensorEventListener
         // We want this service to continue running until it is explicitly
         // stopped, so return sticky.
         //k = 0;
-        return START_STICKY;
+        return super.onStartCommand(intent, flags, startId);
+
     }
 
     @Override

@@ -139,6 +139,25 @@
     </LinearLayout>
 
     <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:orientation="horizontal"
+        android:layout_below="@+id/linearLayout4"
+        android:id="@+id/linearLayout5"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true">
+        <Button
+            android:id="@+id/downloadButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="140dp"
+            android:background="@android:color/holo_red_dark"
+            android:text="DOWNLOAD"
+            android:textSize = "20sp"
+            android:onClick="onDatabaseDownloaddClicked"/>
+        </LinearLayout>
+
+    <LinearLayout
         android:id="@+id/graphLinearLayout"
         android:layout_width="match_parent"
         android:layout_height="220dp"

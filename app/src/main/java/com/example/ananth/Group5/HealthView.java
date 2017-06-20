@@ -15,6 +15,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.view.View;
@@ -39,6 +40,9 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
+import static com.example.ananth.Group5.R.id.stopButton;
+import static com.example.ananth.Group5.R.id.uploadButton;
+
 
 public class HealthView extends AppCompatActivity {
 
@@ -58,12 +62,14 @@ public class HealthView extends AppCompatActivity {
     private static final String TAG = "MyActivity";
     float rcvdXcoord,rcvdYcoord,rcvdZcoord;
     private static String patientID = "",patientAge = "",patientName = "", patientSex= "";
-    private static String dbTableName;
+    private static String dbTableName = "";
     private static String uploadURI = "https://impact.asu.edu/CSE535Spring17Folder/UploadToServer.php";
     private static int httpResponse = 0;
     public static String httpResponseMsg = "";
+    public static boolean registered = false;
 
     public static final String DATABASE_LOCATION = "/mnt/sdcard/CSE535_ASSIGNMENT2/Group5.db";
+    public static boolean inserted = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -79,7 +85,6 @@ public class HealthView extends AppCompatActivity {
         mFilter.addAction(mBroadcastAccData);
         Log.e(TAG, "Registering for receiever");
         Arrays.fill(randomPoints, 0);
-        registerReceiver(reciever, mFilter);
     }
 
     protected void onResume() {
@@ -87,7 +92,9 @@ public class HealthView extends AppCompatActivity {
     }
 
     protected  void onPause() {
-        unregisterReceiver(reciever);
+        if(registered) {
+            unregisterReceiver(reciever);
+        }
         super.onPause();
     }
 
@@ -127,7 +134,6 @@ public class HealthView extends AppCompatActivity {
             //Log.d("E",Environment.getExternalStorageState());
             //Toast.makeText(HealthView.this,Environment.getExternalStorageState(), Toast.LENGTH_LONG).show();
             if(isExternalStorageWritable()) {
-                Log.e(TAG, "onRunClicked: ");
                 //Toast.makeText(this, "isMale", Toast.LENGTH_SHORT).show();
                 dbOpen = new Thread(new Runnable() {
                     @Override
@@ -190,11 +196,17 @@ public class HealthView extends AppCompatActivity {
         InputMethodManager inputManager = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
         inputManager.hideSoftInputFromWindow(this.getCurrentFocus().getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
 
-
+        if(!registered){
+            registered = true;
+            registerReceiver(reciever, mFilter);
+        }
         runState = new Thread(new Runnable() {
             @Override
             public void run() {
 
+                while(!inserted) {
+
+                }
                 randomPoints = fetchFromDB();
                 running = true;
                 while (running) {
@@ -302,7 +314,7 @@ public class HealthView extends AppCompatActivity {
 
 // Install the all-trusting trust manager
                     try {
-                        SSLContext sc = SSLContext.getInstance("SSL");
+                        SSLContext sc = SSLContext.getInstance("TLS");
                         sc.init(null, trustAllCerts, new SecureRandom());
                         HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
                     } catch (Exception e) {
@@ -350,6 +362,7 @@ public class HealthView extends AppCompatActivity {
 
                     httpResponse = conn.getResponseCode();
                     httpResponseMsg = conn.getResponseMessage();
+                    conn.getURL();
                     if(httpResponse == 200){
 
                         runOnUiThread(new Runnable() {
@@ -395,15 +408,15 @@ public class HealthView extends AppCompatActivity {
 
         }
     }
+
+
+
     private void pushIntoDB(float x, float y, float z) {
-        if(patientID.isEmpty() || patientAge.isEmpty() || patientName.isEmpty() || (patientSex.isEmpty())) {
-            Toast.makeText(this, "Please enter all the patient's details", Toast.LENGTH_SHORT).show();
-            return;
-        }
                 try {
                     //perform your database operations here ...
                     db.execSQL( "insert into " +  dbTableName + "(timestamp, xcoord, ycoord, zcoord) values ('"+ System.currentTimeMillis() + "', '"+ x +"', '"+ y +"', '"+ z +"' );" );
                     //db.setTransactionSuccessful(); //commit your changes
+                    inserted = true;
                     Log.v(TAG, "Insert successful");
                 }
                 catch (SQLiteException e) {
@@ -424,7 +437,7 @@ public class HealthView extends AppCompatActivity {
             String query = "select * FROM "+ dbTableName+" ORDER BY timestamp DESC limit 10";
             Log.e(TAG,query);
             Cursor c = db.rawQuery(query, null);
-            float[] coords = new float[c.getCount()];
+            float[] coords = new float[10];
             Log.v(TAG, "Number of records " + c.getCount()+ " ");
 
             Arrays.fill(coords, 0);
