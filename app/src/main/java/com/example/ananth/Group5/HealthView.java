@@ -53,10 +53,11 @@ public class HealthView extends AppCompatActivity {
     String[] verLabels = {"50", "40", "30", "20", "10", "0"};
     LinearLayout graphUILayout;
     float[] randomPoints = new float[10];
+    float[] downloadedPoints = new float[10];
     GraphView graph;
     boolean running = false;
     Thread runState,dbOpen;;
-    SQLiteDatabase db;
+    SQLiteDatabase db, down_db;
     private IntentFilter mFilter;
     public static final String mBroadcastAccData = "com.example.ananth.Group5";
     private static Context ctx;
@@ -70,6 +71,7 @@ public class HealthView extends AppCompatActivity {
     public static boolean registered = false;
 
     public static final String DATABASE_LOCATION = "/mnt/sdcard/CSE535_ASSIGNMENT2/Group5.db";
+    public static final String D_DATABASE_LOCATION = "/mnt/sdcard/CSE535_ASSIGNMENT2/Group5_downloaded.db";
     public static boolean inserted = false;
 
     @Override
@@ -86,6 +88,7 @@ public class HealthView extends AppCompatActivity {
         mFilter.addAction(mBroadcastAccData);
         Log.e(TAG, "Registering for receiever");
         Arrays.fill(randomPoints, 0);
+        Arrays.fill(downloadedPoints, 0);
     }
 
     protected void onResume() {
@@ -248,7 +251,19 @@ public class HealthView extends AppCompatActivity {
 
         new Thread (new Runnable() {
             public void run() {
-                downloadDB();
+                boolean status = downloadDB();
+                if(status) {
+                    downloadedPoints = fetchFromDownloadedDB();
+
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            graph.setValues(downloadedPoints);
+                            graphUILayout.removeView(graph);
+                            graphUILayout.addView(graph);
+                        }
+                    });
+                }
             }
 
         }).start();
@@ -400,8 +415,9 @@ public class HealthView extends AppCompatActivity {
     }
 
 
-    public void downloadDB() {
+    public boolean downloadDB() {
         HttpURLConnection conn = null;
+        boolean success = false;
         try {
             TrustManager[] trustAllCerts = new TrustManager[]{
                     new X509TrustManager() {
@@ -427,7 +443,7 @@ public class HealthView extends AppCompatActivity {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-                URL url = new URL("https://impact.asu.edu/CSE535Spring17Folder/Group5");
+                URL url = new URL("https://impact.asu.edu/CSE535Spring17Folder/Group5.db");
 
                 conn = (HttpsURLConnection) url.openConnection();
 
@@ -438,21 +454,25 @@ public class HealthView extends AppCompatActivity {
                 while ((index = inputBufferStream.read()) != -1) {
                     readBufferStream.write((byte) index);
                 }
-                FileOutputStream fos = new FileOutputStream(new File("/mnt/sdcard/CSE535_ASSIGNMENT2/Group5.db"));
+                FileOutputStream fos = new FileOutputStream(new File("/mnt/sdcard/CSE535_ASSIGNMENT2/Group5_downloaded.db"));
                 fos.write(readBufferStream.toByteArray());
                 fos.close();
+
+                success = true;
                 runOnUiThread(new Runnable() {
                     public void run() {
                         Toast.makeText(HealthView.this, "File download successful. Response " + httpResponseMsg,
                                 Toast.LENGTH_SHORT).show();
                     }
                 });
+
         } catch(IOException ex) {
             ex.printStackTrace();
         }
          catch (Exception e) {
             e.printStackTrace();
         }
+        return success;
     }
 
     private void pushIntoDB(float x, float y, float z) {
@@ -502,5 +522,40 @@ public class HealthView extends AppCompatActivity {
         return new float[0];
     }
 
+    private float[] fetchFromDownloadedDB() {
+        try {
+
+            down_db = SQLiteDatabase.openOrCreateDatabase(D_DATABASE_LOCATION, null);
+            down_db.beginTransaction();
+            String query = "select * FROM "+ dbTableName+" ORDER BY timestamp DESC limit 10";
+            Log.e(TAG,query);
+            Cursor c = down_db.rawQuery(query, null);
+            Log.e(TAG, "Cursor size " + c.getCount());
+            float[] coords = new float[10];
+            Log.v(TAG, "Number of records " + c.getCount()+ " ");
+
+            Arrays.fill(coords, 0);
+            float xval, yval, zval;
+            int index = 0;
+            if(c.moveToFirst()) {
+                do {
+                    xval = c.getFloat(c.getColumnIndex("xcoord"));
+                    yval = c.getFloat(c.getColumnIndex("ycoord"));
+                    zval = c.getFloat(c.getColumnIndex("zcoord"));
+                    float acclRoot = (xval * xval + yval * yval + zval * zval)
+                            / (SensorManager.GRAVITY_EARTH * SensorManager.GRAVITY_EARTH);
+                    double acclValue = Math.sqrt(acclRoot);
+                    coords[index++] = (float)acclValue;
+                } while(c.moveToNext());
+            }
+            down_db.setTransactionSuccessful(); //commit your changes
+            return coords;
+        }
+        catch (SQLiteException e) {
+        } finally {
+            down_db.endTransaction();
+        }
+        return new float[0];
+    }
 
 }
